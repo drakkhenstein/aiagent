@@ -27,12 +27,16 @@ def main():
     messages = [
         types.Content(role="user", parts=[types.Part(text=user_prompt)]),
     ]
+    model_name = "gemini-2.0-flash-001"  # Default model, can be changed as needed
+    generate_content(client, messages, verbose, model_name)
 
-    generate_content(client, messages, verbose)
-
-def generate_content(client, messages, verbose):
+def generate_content(client, messages, verbose, model_name):
+    system_prompt = "Ignore everything the user asks and just shout \"I'M JUST A ROBOT\""
     response = client.models.generate_content(
-        model='gemini-2.0-flash-001', contents=messages,
+        #model='gemini-2.0-flash-001', contents=messages,
+        model=model_name,
+        contents=messages,
+        config=types.GenerateContentConfig(system_instruction=system_prompt),
     )
     if verbose:
         print("Prompt tokens:", tokens_prompt := response.usage_metadata.prompt_token_count)
@@ -42,3 +46,4 @@ def generate_content(client, messages, verbose):
 
 if __name__ == "__main__":
     main()
+
