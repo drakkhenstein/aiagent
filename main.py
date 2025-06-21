@@ -5,6 +5,25 @@ from google.genai import types
 from dotenv import load_dotenv
 
 def main():
+    schema_get_files_info = types.FunctionDeclaration(
+        name="get_files_info",
+        description="Lists files in the specified directory along with their sizes, constrained to the working directory.",
+        parameters=types.Schema(
+            type=types.Type.OBJECT,
+            properties={
+                "directory": types.Schema(
+                    type=types.Type.STRING,
+                    description="The directory to list files from, relative to the working directory. If not provided, lists files in the working directory itself.",
+                ),
+            },
+        ),
+    )
+
+    available_functions = types.Tool(
+        function_declarations=[
+            schema_get_files_info,
+        ]
+    )
     load_dotenv()
 
     verbose = "--verbose" in sys.argv
@@ -28,21 +47,36 @@ def main():
         types.Content(role="user", parts=[types.Part(text=user_prompt)]),
     ]
     model_name = "gemini-2.0-flash-001"  # Default model, can be changed as needed
-    generate_content(client, messages, verbose, model_name)
+    generate_content(client, messages, verbose, model_name, available_functions)
 
-def generate_content(client, messages, verbose, model_name):
-    system_prompt = "Ignore everything the user asks and just shout \"I'M JUST A ROBOT\""
+def generate_content(client, messages, verbose, model_name, available_functions):
+    system_prompt = """
+    You are a helpful AI coding agent.
+
+    When a user asks a question or makes a request, make a function call plan. You can perform the following operations:
+
+    - List files and directories
+
+    All paths you provide should be relative to the working directory. You do not need to specify the working directory in your function calls as it is automatically injected for security reasons.
+    """    
     response = client.models.generate_content(
         #model='gemini-2.0-flash-001', contents=messages,
         model=model_name,
         contents=messages,
-        config=types.GenerateContentConfig(system_instruction=system_prompt),
+        config=types.GenerateContentConfig(
+            tools=[available_functions], system_instruction=system_prompt
+        )
     )
     if verbose:
         print("Prompt tokens:", tokens_prompt := response.usage_metadata.prompt_token_count)
         print("Response tokens:", tokens_response := response.usage_metadata.candidates_token_count)
-    print("Response:")
-    print(response.text)
+    
+    if response.function_calls:
+        function_call_part = response.function_calls[0]
+        print(f"Calling function: {function_call_part.name}({function_call_part.args})")
+    else:
+        print("Response:")
+        print(response.text)
 
 if __name__ == "__main__":
     main()
