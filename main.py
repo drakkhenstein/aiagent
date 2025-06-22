@@ -19,9 +19,58 @@ def main():
         ),
     )
 
+    schema_get_file_content = types.FunctionDeclaration(
+        name="get_file_content",
+        description="Retrieves the content of a specific file.",
+        parameters=types.Schema(
+            type=types.Type.OBJECT,
+            properties={
+                "file_path": types.Schema(
+                    type=types.Type.STRING,
+                    description="The path to the file to retrieve content from, relative to the working directory.",
+                ),
+            },
+        ),
+    )
+
+    schema_run_python_file = types.FunctionDeclaration(
+        name="run_python_file",
+        description="Executes a Python file and returns the output.",
+        parameters=types.Schema(
+            type=types.Type.OBJECT,
+            properties={
+                "file_path": types.Schema(
+                    type=types.Type.STRING,
+                    description="The path to the Python file to execute, relative to the working directory.",
+                ),
+            },
+        ),
+    )
+
+    schema_write_file = types.FunctionDeclaration(
+        name="write_file",
+        description="Writes content to a specific file.",
+        parameters=types.Schema(
+            type=types.Type.OBJECT,
+            properties={
+                "file_path": types.Schema(
+                    type=types.Type.STRING,
+                    description="The path to the file to write to, relative to the working directory.",
+                ),
+                "content": types.Schema(
+                    type=types.Type.STRING,
+                    description="The content to write to the file.",
+                ),
+            },
+        ),
+    ) 
+
     available_functions = types.Tool(
         function_declarations=[
             schema_get_files_info,
+            schema_get_file_content,
+            schema_run_python_file,
+            schema_write_file,
         ]
     )
     load_dotenv()
@@ -56,6 +105,9 @@ def generate_content(client, messages, verbose, model_name, available_functions)
     When a user asks a question or makes a request, make a function call plan. You can perform the following operations:
 
     - List files and directories
+    - Read file contents
+    - Execute Python files with optional arguments
+    - Write or overwrite files
 
     All paths you provide should be relative to the working directory. You do not need to specify the working directory in your function calls as it is automatically injected for security reasons.
     """    
