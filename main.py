@@ -3,6 +3,7 @@ import os
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
+from functions.call_function import call_function
 
 def main():
     schema_get_files_info = types.FunctionDeclaration(
@@ -125,7 +126,15 @@ def generate_content(client, messages, verbose, model_name, available_functions)
     
     if response.function_calls:
         function_call_part = response.function_calls[0]
-        print(f"Calling function: {function_call_part.name}({function_call_part.args})")
+        function_call_result = call_function(function_call_part, verbose=verbose)
+        if not (
+            function_call_result.parts and
+            hasattr(function_call_result.parts[0], "function_response") and
+            getattr(function_call_result.parts[0].function_response, "response", None)
+        ):
+            raise Exception("No function response received. Please check the function call and try again.")
+        if verbose:
+            print(f"-> {function_call_result.parts[0].function_response.response}")
     else:
         print("Response:")
         print(response.text)
